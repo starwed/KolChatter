@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    >
+    
+	<!--  LinearLayout android:orientation="horizontal"
+    	android:layout_width="fill_parent"
+   	 	android:layout_height="wrap_content">
+		<Button android:id="@+id/mainbutton"
+	            android:layout_width="wrap_content"
+	            android:layout_height="wrap_content"
+	            android:text="Main.php" />
+
+	</LinearLayout-->
+    <!--  This is added to test webview -->
+    <TextView   android:id="@+id/output_text"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:text="yes?"
+		/>    	
+  
+  	<RelativeLayout android:orientation="vertical"
+  		android:layout_width="fill_parent"
+    	android:layout_height="fill_parent">
+		<EditText
+		    android:id="@+id/chatedit"
+		    android:layout_width="fill_parent"
+		    android:layout_height="wrap_content"
+			android:layout_alignParentBottom="true"
+		    />
+		<WebView android:id="@+id/appView"
+	        android:layout_height="fill_parent"
+	        android:layout_width="fill_parent"
+	        android:layout_above = "@id/chatedit"
+	        />      
+    </RelativeLayout>   
+</LinearLayout>
