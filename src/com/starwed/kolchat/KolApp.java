@@ -97,8 +97,11 @@ public class KolApp extends Activity {
 	{
 		super.onSaveInstanceState (outState);
 		chatView.saveState(outState);
-		outState.putString("lastseen", chat.lastseen);
-		outState.putString("chatLog", chat.chatLog);
+		try{
+			outState.putString("lastseen", chat.lastseen);
+			outState.putString("chatLog", chat.chatLog);
+		}catch(Exception e){};
+		
 		outState.putParcelable("kolSession", kolData.session);
 	}
 	
@@ -107,19 +110,24 @@ public class KolApp extends Activity {
 	protected void onRestoreInstanceState (Bundle savedInstanceState)
 	{
 		super.onRestoreInstanceState(savedInstanceState);
+		chatView.restoreState(savedInstanceState);
+
 		kolData = new KolData();
-		
-		
 		kolData.session = savedInstanceState.getParcelable("kolSession");
-		chat = new KolChat(kolData.session);
-		chat.lastseen = savedInstanceState.getString("lastseen");
-		chat.chatLog = savedInstanceState.getString("chatLog");
-		
+
+		if(kolData.session != null)
+		{
+			chat = new KolChat(kolData.session, this);
+			try{
+			chat.lastseen = savedInstanceState.getString("lastseen");
+			chat.chatLog = savedInstanceState.getString("chatLog");
+			}catch(Exception e){};
+			chat.startChat();
+		}
 		try{
-			chatView.restoreState(savedInstanceState);
 		}catch(Exception e){postText("error on restoreState: " + e.toString() ); }
 		
-		chat.startChat();
+	
 		
 	}
 	
@@ -138,8 +146,7 @@ public class KolApp extends Activity {
 	            	String pwd = data.getStringExtra("password");
 	            	//postText(name + " " + pwd);
 	            	startSession(name, pwd);
-	            	chat = new KolChat(kolData.session);
-	            	chat.startChat();
+	            	
 	            }
 	        default:
 	            break;
@@ -165,7 +172,8 @@ public class KolApp extends Activity {
                 if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
                     (keyCode == KeyEvent.KEYCODE_ENTER)) {
                   // Perform action on key press
-                	chat.submitChat( chatedit.getText().toString() );
+                	try{chat.submitChat( chatedit.getText().toString() ); }
+                	catch(Exception e){postText(e.toString());}
                 	chatedit.setText("");
                 	
                 	return true;
@@ -223,6 +231,7 @@ public class KolApp extends Activity {
  
 
         kolData = new KolData();
+        
 
     }
     
@@ -278,10 +287,11 @@ public class KolApp extends Activity {
 		chatDirty = true;
 		scrollPosition = chatView.getScrollX();
 		chatView.getDrawingRect(chatWindowRect);
-		chatView.loadData(chatlog, "text/html", "utf-8");
- 	
-    	   	
-		
+		//chatView.loadData(chatlog, "text/html", "utf-8");
+		try{
+			loadHtml(chatlog); 	
+ 		}catch(Exception e){ postText("Error in submitChat " + e.toString()); };
+
     }
  
     
@@ -312,7 +322,12 @@ public class KolApp extends Activity {
 		protected void onPostExecute(String result) {
 			dialog.cancel();
 			if(kolData.session != null)
+			{
 				updateChatView("<font color=green>Currently in channel: " + kolData.session.initialChatChannel + "</font><br/>");
+				chat = new KolChat(kolData.session, KolApp.this);
+            	chat.startChat();
+				
+			}
 			postText(result);
         }
     }

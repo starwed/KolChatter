@@ -15,8 +15,8 @@ import android.os.Handler;
  */
 public class KolChat {
 		
-	public KolSession session;
-	public KolApp app;
+	private KolSession session;
+	private KolApp app;
 	//things that should be interior to this class, and need to be removed from the KolApp class
 	public String lastseen;
 	public boolean runchat ;	
@@ -24,9 +24,10 @@ public class KolChat {
 	private Handler handler = new Handler();
 	private Timer timer = new Timer();
 	
-	public KolChat(KolSession kolSession)
+	public KolChat(KolSession kolSession, KolApp a)
 	{
 		session = kolSession;
+		app = a;
 		lastseen = "0";
 		runchat = false; //default chat to off
 		chatLog= "";
@@ -69,20 +70,28 @@ public class KolChat {
 
 	public void submitChat(String postedgraf)
     {
+		String response;
+		KolRequest kolreq;
+		try{
     	
     	//construct request
-    	KolRequest kolreq = session.createKolRequest("submitnewchat.php");
+    	kolreq = session.createKolRequest("submitnewchat.php");
     	kolreq.addQuery("graf",  postedgraf);
+		
     	
-    	//get the response and display it.  This blocks the UI thread... is that what we want?
-    	String response = kolreq.doRequestWithPassword();
-    	//postText(response);  //just for debugging purposes
-    	ProcessChatResponse(response);
+			try{
+	    	//get the response and display it.  This blocks the UI thread... is that what we want?
+	    	response = kolreq.doRequestWithPassword();
+	    	//postText(response);  //just for debugging purposes
+	    	ProcessChatResponse(response);
+			}catch(Exception e){ app.postText("Error in submitChat:getting a response: " + e.toString()); };
+		}catch(Exception e){ app.postText("Error in submitChat:creating query: " + e.toString()); };
 
     }
     
     public void ProcessChatResponse(String response)
     {
+    	try{
     	chatLog = chatLog + response;
     	/*
     	 * Three cases:
@@ -93,7 +102,9 @@ public class KolChat {
     	 * We might need to have the logic anyway, to process dojax scripts that are sent to us.
     	 */
     	if(response.indexOf("<!--lastseen") != 0 )
-    		app.updateChatView(response);
+    		app.updateChatView(chatLog);
+		}catch(Exception e){ app.postText("Error in ProcessChatResponse " + e.toString()); };
+
 		
     }
  
