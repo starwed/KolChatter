@@ -1,8 +1,7 @@
 package com.starwed.kolchat;
 
 
-import java.util.Timer;
-import java.util.TimerTask;
+
 
 import com.starwed.kolchat.R;
 
@@ -13,7 +12,6 @@ import android.graphics.Picture;
 import android.graphics.Rect;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -28,6 +26,10 @@ import android.widget.TextView;
 
 
 // TODO list 
+// #1 TODO complete refactoring of chat code into its own object
+// - App needs to create chat object in the first place
+// - Handle parceling of chat object, if necessary
+// - 
 
 
 // ? Optionally allow info to be stored?  Not really sure how hard that is yet.
@@ -60,21 +62,19 @@ public class KolApp extends Activity {
 	private WebViewClient client;
 	//private KolSession session;
 	
-	public KolSession kSession;
+	//public KolSession kSession;
 	
 	public class KolData
 	{
 		public KolSession session;
-		public String lastseen = "0";
 		public boolean runchat = false;	
-		public String chatLog = ""; 
-		//data for cookie?
-		// version:0, name: PHPSESSID, value:~~, domain:host, path: /, expiry: null
-		public String persistText = "Initial";
+		 		
 	}
 	public KolData kolData; 
+	
+	public KolChat chat;
 		//UI objects
-	private WebView appView;
+	private WebView chatView;
 	public Rect chatWindowRect = new Rect();
 	public int scrollPosition;
 	
@@ -83,17 +83,12 @@ public class KolApp extends Activity {
 
 	private EditText chatedit;
 	private boolean chatDirty=false;
-		
+			
 
-	
-	
-	private Handler handler = new Handler();
-	private Timer timer = new Timer();
 	private TextView output_textview;
 	
 	private ProgressDialog dialog;
 
-	private static final int CHAT_DELAY = 8000;
 	private static final int REQUESTCODE_LOGIN = 1;
 	
 	//This method is called before the activity is destroyed, so we save all the data needed for restoring later
@@ -101,9 +96,9 @@ public class KolApp extends Activity {
 	protected void onSaveInstanceState (Bundle outState)
 	{
 		super.onSaveInstanceState (outState);
-		appView.saveState(outState);
-		outState.putString("lastseen", kolData.lastseen);
-		outState.putString("chatLog", kolData.chatLog);
+		chatView.saveState(outState);
+		outState.putString("lastseen", chat.lastseen);
+		outState.putString("chatLog", chat.chatLog);
 		outState.putParcelable("kolSession", kolData.session);
 	}
 	
@@ -113,13 +108,18 @@ public class KolApp extends Activity {
 	{
 		super.onRestoreInstanceState(savedInstanceState);
 		kolData = new KolData();
-		kolData.lastseen = savedInstanceState.getString("lastseen");
-		kolData.chatLog = savedInstanceState.getString("chatLog");
+		
+		
 		kolData.session = savedInstanceState.getParcelable("kolSession");
+		chat = new KolChat(kolData.session);
+		chat.lastseen = savedInstanceState.getString("lastseen");
+		chat.chatLog = savedInstanceState.getString("chatLog");
+		
 		try{
-			appView.restoreState(savedInstanceState);
+			chatView.restoreState(savedInstanceState);
 		}catch(Exception e){postText("error on restoreState: " + e.toString() ); }
-		startChat();
+		
+		chat.startChat();
 		
 	}
 	
@@ -130,8 +130,7 @@ public class KolApp extends Activity {
 	    	case KolApp.REQUESTCODE_LOGIN:
 	            // This is the standard resultCode that is sent back if the
 	            // activity crashed or didn't doesn't supply an explicit result.
-	            if (resultCode == RESULT_CANCELED){
-	                //myMessageboxFunction("Fight cancelled");
+	            if (resultCode == RESULT_CANCELED){	                
 	            	postText("cancelled");
 	            } 
 	            else {
@@ -139,7 +138,8 @@ public class KolApp extends Activity {
 	            	String pwd = data.getStringExtra("password");
 	            	//postText(name + " " + pwd);
 	            	startSession(name, pwd);
-	            	startChat();
+	            	chat = new KolChat(kolData.session);
+	            	chat.startChat();
 	            }
 	        default:
 	            break;
@@ -153,28 +153,11 @@ public class KolApp extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
        
-        
-
-        
         setContentView(R.layout.main);
         
-        // Textview to just dump stuff to
+        // Textview to just dump messages to
         output_textview = (TextView) findViewById(R.id.output_text);
-        
-        
-        chatedit = (EditText) findViewById(R.id.chatedit);
-
-        //First button "main" temp to login travesty TODO remove! from both code and xml
-        /*mainbutton = (Button) findViewById(R.id.mainbutton);
-        mainbutton.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-              
-            			startSession("name", "pwd");
-            }
-        });*/
-        
-       
-        
+               
         chatedit = (EditText) findViewById(R.id.chatedit);
         chatedit.setOnKeyListener(new OnKeyListener() {
             public boolean onKey(View v, int keyCode, KeyEvent event) {
@@ -182,7 +165,7 @@ public class KolApp extends Activity {
                 if ((event.getAction() == KeyEvent.ACTION_DOWN) &&
                     (keyCode == KeyEvent.KEYCODE_ENTER)) {
                   // Perform action on key press
-                	SubmitChat( chatedit.getText().toString() );
+                	chat.submitChat( chatedit.getText().toString() );
                 	chatedit.setText("");
                 	
                 	return true;
@@ -193,7 +176,7 @@ public class KolApp extends Activity {
         
         
         // Webview
-        appView = (WebView) findViewById(R.id.appView);
+        chatView = (WebView) findViewById(R.id.appView);
         
         //TODO handle any interesting chat links user might interact with
         client = new WebViewClient() {  
@@ -205,23 +188,23 @@ public class KolApp extends Activity {
         		 	//appView.pageDown(true);
         	}  
         };
-        appView.setWebViewClient(client);
+        chatView.setWebViewClient(client);
         
         // This is so it scrolls down to the bottom when chat is added
-        appView.setPictureListener( new WebView.PictureListener() {
+        chatView.setPictureListener( new WebView.PictureListener() {
 			public void onNewPicture(WebView view, Picture picture) {
 				
 				//only scroll if chat has been "dirtied"
-				if(chatDirty)
+				if(chatDirty==true)
 				{
 					try{
 						//appView.requestRectangleOnScreen(chatWindowRect, true);
 						
 						//Jump to last position, then visibly scroll down to the bottom?  Hopefully this looks best.
 						//TODO deal with case when user has scrolled up
-						appView.scrollTo(chatWindowRect.left, chatWindowRect.top);
-						appView.pageDown(true);
-						postText(chatWindowRect.toShortString() + " | scrollX = " + scrollPosition + " | cH " + appView.getContentHeight() );
+						chatView.scrollTo(chatWindowRect.left, chatWindowRect.top);
+						chatView.pageDown(true);
+						postText(chatWindowRect.toShortString() + " | scrollX = " + scrollPosition + " | cH " + chatView.getContentHeight() );
 					}catch(Exception e){ postText(e.toString()); }
 					//appView.pageDown(true);
 					chatDirty=false;
@@ -231,7 +214,7 @@ public class KolApp extends Activity {
         		
         
         );
-        WebSettings webSettings = appView.getSettings();
+        WebSettings webSettings = chatView.getSettings();
         webSettings.setSavePassword(false);
         webSettings.setSaveFormData(false);
         webSettings.setJavaScriptEnabled(true);
@@ -265,38 +248,14 @@ public class KolApp extends Activity {
     	}*/
     }
     
-   public void startChat()
-   {
-	   //Only start the chat loop if runchat is currently false
-	   if(kolData.runchat == false)
-		   kolData.runchat = true;
-	   else
-		   return;
-	   
-	   //if there is stuff logged, show it, otherwise show a temp message.
-	   if(kolData.chatLog.length() == 0)
-	   {	  
-		   // maybe return?  This should never happen if we've initialised
-		   
-	   }
-	   else
-		   loadHtml(kolData.chatLog);
-	   // Initialise the first chat request to occur in 800ms.  
-	   // After that, each successful chat request sets up another one to occur in KolApp.CHAT_DELAY ms.
-	   try{
-		   timer.schedule(new FetchChat(), 800);
-       }catch(Exception e){
-    	   postText("Problem starting chat timer" + e.toString() );
-       }
-	   
-   }
+
     
     public void loadHtml(String source)
     {
     	//appView.loadData(source, "text/html", "utf-8");
     	
     	//Hopefully prevent that annoying data:url bug/problem.
-    	appView.loadDataWithBaseURL(null, source,"text/html", "UTF-8", null);
+    	chatView.loadDataWithBaseURL(null, source,"text/html", "UTF-8", null);
     }
     
     public void postText(String text)
@@ -305,121 +264,26 @@ public class KolApp extends Activity {
     }
     
     
-    public void SubmitChat(String postedgraf)
-    {
-    	
-    	//construct request
-    	KolRequest kolreq = kolData.session.createKolRequest("submitnewchat.php");
-    	kolreq.addQuery("graf",  postedgraf);
-    	
-    	//get the response and display it.  This blocks the UI thread... is that what we want?
-    	String response = kolreq.doRequestWithPassword();
-    	//postText(response);  //just for debugging purposes
-    	ProcessChatResponse(response);
-
-    }
     
-    public void ProcessChatResponse(String response)
+    public void updateChatView(String chatlog)
     {
-    	kolData.chatLog = kolData.chatLog + response;
-    	//postText(kolData.lastseen);
-    	/*postText("X:" + appView.getScrollY() 
-    			+ "; mH: " + appView.getMeasuredHeight()
-    			+ "; vH: " + appView.getHeight()
-    	);*/
+    	//note: if the chatlog completely changes (as opposed to being updated) the scrolling will get messed up. 
     	
-    	/*
-    	 * Three cases:
-    	 * 	index == 0 --> response ONLY contains the lastseen tick, so don't update
-    	 *  index < 0  --> response DOES NOT contain lastseen, so contains something else important. Update!
-    	 *  index >0   --> response is standard chat update with lastseen tagged on at the end, so Update!
-    	 * Would be more elegant to simply remove lastseen block and then update if there was anything left.
-    	 * We might need to have the logic anyway, to process dojax scripts that are sent to us.
-    	 */
-    	try{
-        	/*postText("X:" + appView.getScrollX() 
-        			+ "; mH: " + appView.getMeasuredHeight()
-        			+ "; vH: " + appView.getHeight()
-        	);*/
-        		appView.getDrawingRect(chatWindowRect);
-        		//postText(chatWindowRect.toShortString());
-        	}catch(Exception e){ postText("rect error: " + e.toString()); }
-    	if(response.indexOf("<!--lastseen") != 0 )
-    	{
-    		//only reload webview if something has changed
-    		chatDirty = true;
-    		scrollPosition = appView.getScrollX();
-    		appView.getDrawingRect(chatWindowRect);
-    		appView.loadData(kolData.chatLog, "text/html", "utf-8");
+      	try{
+
+        		chatView.getDrawingRect(chatWindowRect);
+       	}catch(Exception e){ postText("rect error: " + e.toString()); }
+
+		//set flag so that webview knows to scroll (TODO is this even necessary now?)
+		chatDirty = true;
+		scrollPosition = chatView.getScrollX();
+		chatView.getDrawingRect(chatWindowRect);
+		chatView.loadData(chatlog, "text/html", "utf-8");
  	
-    	}
-    		
-
-    	//postText( response.substring(0, 10));
-    	
+    	   	
 		
     }
  
-    //This class is a runnable object that, when ran, makes an async request to update chat
-    //  --The class seems to be necessary so that we can schedule a TimerTask object 
-    //	-- I couldn't figure out how to do this directly with the async request
-    public class FetchChat extends TimerTask{
-    	private Runnable runnable = new Runnable(){
-    		public void run(){
-    			if(kolData.runchat==true)
-    				new GetChatTask().execute("meh");
-    		}
-    	};
-    	public void run(){
-    		try{
-    			handler.post(runnable);
-    		}catch(Exception e){ };
-    	}
-    }
-    
-    //This performs the asyn request to get updated chat stuff, and then hands the response to ProcessChatResponse
-    public class GetChatTask extends AsyncTask <Object, String, String> {
- 
-   
-	
-		protected String doInBackground(Object... args) {
-			if(kolData.runchat==false)
-				return "";
-			if( kolData.session == null)
-				return "";
-			try{
-				KolRequest req = kolData.session.createKolRequest("newchatmessages.php");
-				req.addQuery("lasttime", kolData.lastseen);
-				String responseBody = req.doRequest();
-				return responseBody;
-			}catch(Exception e){return e.toString();}
-		}
-		
-		protected void onProgressUpdate(String... progress) {
-	        // setProgressPercent(progress[0]);
-	     }
-
-		
-		protected void onPostExecute(String result) {
-            
-			//I believe every valid response from a request for newchatmessages.php will contain lastseen info, 
-			// so only process the response if that's the case
-        	if(result.contains("lastseen"))
-        	{
-        			//Parse lastseen value from response.  Lastindex because it's appended to the end of the chat itself.
-        			int index = result.lastIndexOf("lastseen");
-        			kolData.lastseen = result.substring(index+9, index+19);
- 
-        			//Do whatever is necessary with this result.  Later, maybe move all parsing (including lastseen) into this function
-        			ProcessChatResponse(result);
-        	}
-        	else if(kolData.session != null)	//If the session isn't active there's nothing interesting to say
-        		postText("Error getting response from newchatmessages.php: " + result);
-        	//Schedule next fetch of chat, regardless of whether result makes sense, but only if runchat flag is set
-        	if(kolData.runchat==true)
-        		timer.schedule(new FetchChat(), CHAT_DELAY);
-        }
-    }
     
     
     public class StartSessionTask extends AsyncTask<String, String, String >{
@@ -448,7 +312,7 @@ public class KolApp extends Activity {
 		protected void onPostExecute(String result) {
 			dialog.cancel();
 			if(kolData.session != null)
-				ProcessChatResponse("<font color=green>Currently in channel: " + kolData.session.initialChatChannel + "</font><br/>");
+				updateChatView("<font color=green>Currently in channel: " + kolData.session.initialChatChannel + "</font><br/>");
 			postText(result);
         }
     }
@@ -491,7 +355,7 @@ public class KolApp extends Activity {
     
     public void quit(){
     	try{
-    		kolData.runchat=false;
+    		chat.runchat=false;
     		if(kolData.session != null)
     			kolData.session.logOut();
     		finish();

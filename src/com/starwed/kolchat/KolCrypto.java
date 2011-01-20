@@ -56,7 +56,6 @@ public class KolCrypto {
     	return hash2;
      }
     
-    //from the KolMafia source TODO proper licensing etc.
     private static final String getHexString( final byte[] bytes )
 	{
      	byte[] nonNegativeBytes = new byte[ bytes.length + 1 ];

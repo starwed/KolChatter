@@ -288,10 +288,7 @@ public class KolSession implements Parcelable{
         else
         	initialChatChannel = "unknown";
 
-        
-        
-        
-    	
+
     }
 
     public void logOut()
