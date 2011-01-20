@@ -17,7 +17,7 @@ public class KolChat {
 		
 	private KolSession session;
 	private KolApp app;
-	//things that should be interior to this class, and need to be removed from the KolApp class
+
 	public String lastseen;
 	public boolean runchat ;	
 	public String chatLog; 

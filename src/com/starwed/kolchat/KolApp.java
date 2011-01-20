@@ -26,10 +26,7 @@ import android.widget.TextView;
 
 
 // TODO list 
-// #1 TODO complete refactoring of chat code into its own object
-// - App needs to create chat object in the first place
-// - Handle parceling of chat object, if necessary
-// - 
+
 
 
 // ? Optionally allow info to be stored?  Not really sure how hard that is yet.
@@ -46,23 +43,10 @@ import android.widget.TextView;
 // ? Fix loading html data thingy  -- maybe fixed, but still saw a sim. error once
 
 
-// + Load intro chat screen, so we know what channel we're in
-// + Allow user to input login/password!
-// + Implement secure login -- Working!
-// + Fix screen rotation issues -- Looks like this is done, but for resetting the display text that's for errors anyway
-// + Char escape stuff for form submission -- Done!
-// + Implement sending chats :) -- done!
-// + Restart chat service on recreation, keep old log
-// + Handle that scrolling issue more gracefully
-
-
 
 public class KolApp extends Activity {
 	
 	private WebViewClient client;
-	//private KolSession session;
-	
-	//public KolSession kSession;
 	
 	public class KolData
 	{
@@ -71,22 +55,18 @@ public class KolApp extends Activity {
 		 		
 	}
 	public KolData kolData; 
-	
 	public KolChat chat;
-		//UI objects
+	
+	//UI objects
 	private WebView chatView;
 	public Rect chatWindowRect = new Rect();
 	public int scrollPosition;
-	
-	//private Button mainbutton;
-
-
-	private EditText chatedit;
 	private boolean chatDirty=false;
-			
 
 	private TextView output_textview;
-	
+
+	private EditText chatedit;
+			
 	private ProgressDialog dialog;
 
 	private static final int REQUESTCODE_LOGIN = 1;
@@ -115,8 +95,7 @@ public class KolApp extends Activity {
 		kolData = new KolData();
 		kolData.session = savedInstanceState.getParcelable("kolSession");
 
-		if(kolData.session != null)
-		{
+		if(kolData.session != null){
 			chat = new KolChat(kolData.session, this);
 			try{
 			chat.lastseen = savedInstanceState.getString("lastseen");
@@ -124,10 +103,6 @@ public class KolApp extends Activity {
 			}catch(Exception e){};
 			chat.startChat();
 		}
-		try{
-		}catch(Exception e){postText("error on restoreState: " + e.toString() ); }
-		
-	
 		
 	}
 	
@@ -194,6 +169,7 @@ public class KolApp extends Activity {
         	
         	public void onPageFinished(WebView view, String url)  {  
         		 	//appView.pageDown(true);
+        			// This triggers before the actual rendering, so scrolling isn't useful
         	}  
         };
         chatView.setWebViewClient(client);
@@ -201,36 +177,27 @@ public class KolApp extends Activity {
         // This is so it scrolls down to the bottom when chat is added
         chatView.setPictureListener( new WebView.PictureListener() {
 			public void onNewPicture(WebView view, Picture picture) {
-				
 				//only scroll if chat has been "dirtied"
 				if(chatDirty==true)
 				{
-					try{
-						//appView.requestRectangleOnScreen(chatWindowRect, true);
-						
+					try{						
 						//Jump to last position, then visibly scroll down to the bottom?  Hopefully this looks best.
 						//TODO deal with case when user has scrolled up
 						chatView.scrollTo(chatWindowRect.left, chatWindowRect.top);
 						chatView.pageDown(true);
 						postText(chatWindowRect.toShortString() + " | scrollX = " + scrollPosition + " | cH " + chatView.getContentHeight() );
 					}catch(Exception e){ postText(e.toString()); }
-					//appView.pageDown(true);
 					chatDirty=false;
 				}
 			}
-		}
-        		
-        
-        );
+		} );
         WebSettings webSettings = chatView.getSettings();
         webSettings.setSavePassword(false);
         webSettings.setSaveFormData(false);
         webSettings.setJavaScriptEnabled(true);
         webSettings.setSupportZoom(true);
 
- 
-
-        kolData = new KolData();
+       kolData = new KolData();
         
 
     }
@@ -247,23 +214,14 @@ public class KolApp extends Activity {
     		postText("While creating sessionTask: " + e.toString());
     	}
     	
-    	/*}catch(KolLoginException e) {
-    		//Handle login specific errors
-    		postText(e.toString());
-    		loadHtml(e.kolResponse);
-    	}catch(Exception e){
-    		postText("Generic login exception: " + e.toString());
-
-    	}*/
+    	
     }
     
 
     
     public void loadHtml(String source)
     {
-    	//appView.loadData(source, "text/html", "utf-8");
-    	
-    	//Hopefully prevent that annoying data:url bug/problem.
+       	//Hopefully using the base url will prevent that annoying data:url bug/problem.
     	chatView.loadDataWithBaseURL(null, source,"text/html", "UTF-8", null);
     }
     
@@ -287,10 +245,9 @@ public class KolApp extends Activity {
 		chatDirty = true;
 		scrollPosition = chatView.getScrollX();
 		chatView.getDrawingRect(chatWindowRect);
-		//chatView.loadData(chatlog, "text/html", "utf-8");
 		try{
 			loadHtml(chatlog); 	
- 		}catch(Exception e){ postText("Error in submitChat " + e.toString()); };
+ 		}catch(Exception e){ postText("Problem in updateChatView " + e.toString()); };
 
     }
  
@@ -314,19 +271,16 @@ public class KolApp extends Activity {
 			
 	     }
 		
-		protected void onPreExecute()
-		{
+		protected void onPreExecute() {
 			dialog = ProgressDialog.show(KolApp.this, "",  "Logging in to the Kingdom" , true);
 		}
 		
 		protected void onPostExecute(String result) {
 			dialog.cancel();
-			if(kolData.session != null)
-			{
+			if(kolData.session != null){
 				updateChatView("<font color=green>Currently in channel: " + kolData.session.initialChatChannel + "</font><br/>");
 				chat = new KolChat(kolData.session, KolApp.this);
             	chat.startChat();
-				
 			}
 			postText(result);
         }
@@ -374,7 +328,6 @@ public class KolApp extends Activity {
     		if(kolData.session != null)
     			kolData.session.logOut();
     		finish();
-    		//kolData.session=null;  //TODO figure out if this needs to happen after asyn logout request
     		
     	}
     	catch(Exception e){
