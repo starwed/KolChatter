@@ -6,11 +6,9 @@ package com.starwed.kolchat;
 import com.starwed.kolchat.R;
 
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Picture;
 import android.graphics.Rect;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -26,7 +24,8 @@ import android.widget.TextView;
 
 
 // TODO list 
-
+//- Bring up login screen on app start?  Not yet, I guess
+//- investigate chat window not updating bug
 
 
 // ? Optionally allow info to be stored?  Not really sure how hard that is yet.
@@ -34,7 +33,6 @@ import android.widget.TextView;
 // DO This later, not necessary right now.
 // - UI for general consumption
 //		- Create menu -- kind of done, but need logic to enable/disable certain buttons
-//		- Bring up login screen on app start?  Not yet, I guess
 
 //	- Use /c command to get chat location, rather than current method
 
@@ -67,7 +65,6 @@ public class KolApp extends Activity {
 
 	private EditText chatedit;
 			
-	private ProgressDialog dialog;
 
 	private static final int REQUESTCODE_LOGIN = 1;
 	
@@ -117,11 +114,11 @@ public class KolApp extends Activity {
 	            	postText("cancelled");
 	            } 
 	            else {
-	            	String name = data.getStringExtra("name");
-	            	String pwd = data.getStringExtra("password");
-	            	//postText(name + " " + pwd);
-	            	startSession(name, pwd);
 	            	
+	            	kolData.session = data.getParcelableExtra("session");
+	            	updateChatView("<font color=green>Currently in channel: " + kolData.session.initialChatChannel + "</font><br/>");
+					chat = new KolChat(kolData.session, KolApp.this);
+	            	chat.startChat();
 	            }
 	        default:
 	            break;
@@ -199,26 +196,9 @@ public class KolApp extends Activity {
 
        kolData = new KolData();
         
-
     }
     
-    public void startSession(String user, String password)
-    {
-    	
-    		
-   		//kolData.session = new KolSession(user, password);
-    	try{
-   			new StartSessionTask().execute(user, password);
-    	}catch(Exception e)
-    	{
-    		postText("While creating sessionTask: " + e.toString());
-    	}
-    	
-    	
-    }
-    
-
-    
+   
     public void loadHtml(String source)
     {
        	//Hopefully using the base url will prevent that annoying data:url bug/problem.
@@ -253,38 +233,7 @@ public class KolApp extends Activity {
  
     
     
-    public class StartSessionTask extends AsyncTask<String, String, String >{
-    	 
-    	
-		protected String doInBackground(String... args) {
-			
-			try{
-				kolData.session = new KolSession(args[0], args[1]);
-			}catch(Exception e ){
-				return( "Problem creating session: " + e.toString() );
-			}
-			return( "Session created for " + args[0] );	
-		}
-		
-		protected void onProgressUpdate(String... progress) {
-	        // setProgressPercent(progress[0]);
-			
-	     }
-		
-		protected void onPreExecute() {
-			dialog = ProgressDialog.show(KolApp.this, "",  "Logging in to the Kingdom" , true);
-		}
-		
-		protected void onPostExecute(String result) {
-			dialog.cancel();
-			if(kolData.session != null){
-				updateChatView("<font color=green>Currently in channel: " + kolData.session.initialChatChannel + "</font><br/>");
-				chat = new KolChat(kolData.session, KolApp.this);
-            	chat.startChat();
-			}
-			postText(result);
-        }
-    }
+
     
     //creates options menu from the xml resource
     @Override
