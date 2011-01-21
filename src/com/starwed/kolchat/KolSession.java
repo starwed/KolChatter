@@ -35,7 +35,7 @@ public class KolSession implements Parcelable{
 	public String temphash;
 	
 	
-	public String initialChatChannel = "";
+	public String initialChatChannel = ""; // value is data[4]
 	
 	//Regular constructor logs on for us.  Reasoning here is a session is useless til we've logged on and gotten the proper data
 	// Further, this process /should/ block UI.
@@ -67,18 +67,19 @@ public class KolSession implements Parcelable{
 	
 	public void readFromParcel(Parcel in)
 	{
-		String[] data = new String[4];
+		String[] data = new String[5];
 		in.readStringArray(data);
 		this.host= data[0];
 		this.playerid = data[1];
 		this.pwd = data[2];
 		String sessionid = data[3];
 		this.setCookieStore(sessionid);
+		initialChatChannel  = data[4];
 		
 	}
 
 	public void writeToParcel(Parcel out, int flags) {
-		out.writeStringArray(new String[] { host, playerid, pwd, getSessionId() } );
+		out.writeStringArray(new String[] { host, playerid, pwd, getSessionId(), initialChatChannel } );
 	}
 	
 	
@@ -287,7 +288,6 @@ public class KolSession implements Parcelable{
         }
         else
         	initialChatChannel = "unknown";
-
 
     }
 

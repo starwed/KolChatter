@@ -15,12 +15,14 @@ public class KolLoginException extends Exception {
 	public static int NIGHTLY_MAINTENANCE = 5;
 
 	public int problemCode=0;
+	public String  message;
 	public String kolResponse="";
 		public KolLoginException(String detailMessage, String htmlCode, int code)
 		{
 			super(detailMessage);
 			problemCode= code;
 			kolResponse=htmlCode;
+			message = detailMessage;
 		}
 	
 

@@ -45,7 +45,7 @@ import android.widget.TextView;
 public class KolApp extends Activity {
 	
 	private WebViewClient client;
-	
+	private boolean isLoggedIn=false;
 	public class KolData
 	{
 		public KolSession session;
@@ -78,7 +78,7 @@ public class KolApp extends Activity {
 			outState.putString("lastseen", chat.lastseen);
 			outState.putString("chatLog", chat.chatLog);
 		}catch(Exception e){};
-		
+		outState.putBoolean("isLoggedIn", isLoggedIn);
 		outState.putParcelable("kolSession", kolData.session);
 	}
 	
@@ -95,10 +95,10 @@ public class KolApp extends Activity {
 		if(kolData.session != null){
 			chat = new KolChat(kolData.session, this);
 			try{
-			chat.lastseen = savedInstanceState.getString("lastseen");
-			chat.chatLog = savedInstanceState.getString("chatLog");
+				chat.lastseen = savedInstanceState.getString("lastseen");
+				chat.chatLog = savedInstanceState.getString("chatLog");
 			}catch(Exception e){};
-			chat.startChat();
+			chat.startChat();			
 		}
 		
 	}
@@ -114,11 +114,21 @@ public class KolApp extends Activity {
 	            	postText("cancelled");
 	            } 
 	            else {
-	            	
+	            	try{
 	            	kolData.session = data.getParcelableExtra("session");
-	            	updateChatView("<font color=green>Currently in channel: " + kolData.session.initialChatChannel + "</font><br/>");
-					chat = new KolChat(kolData.session, KolApp.this);
-	            	chat.startChat();
+	            	if(kolData.session == null)
+	            	{
+	            		postText("session is null");
+	            		return;
+	            	}
+	            	try{chat = new KolChat(kolData.session, KolApp.this);
+	            	
+	            	}catch(Exception e){postText("error creating chat: " + e.toString());}
+	            	chat.chatLog = "<font color=green>Currently in channel: " + kolData.session.initialChatChannel + "</font><br/>";
+					chat.startChat();
+					isLoggedIn=true;
+	            	}catch(Exception e){postText(e.toString());}
+	            	
 	            }
 	        default:
 	            break;
@@ -182,7 +192,7 @@ public class KolApp extends Activity {
 						//TODO deal with case when user has scrolled up
 						chatView.scrollTo(chatWindowRect.left, chatWindowRect.top);
 						chatView.pageDown(true);
-						postText(chatWindowRect.toShortString() + " | scrollX = " + scrollPosition + " | cH " + chatView.getContentHeight() );
+						//postText(chatWindowRect.toShortString() + " | scrollX = " + scrollPosition + " | cH " + chatView.getContentHeight() );
 					}catch(Exception e){ postText(e.toString()); }
 					chatDirty=false;
 				}
@@ -194,8 +204,42 @@ public class KolApp extends Activity {
         webSettings.setJavaScriptEnabled(true);
         webSettings.setSupportZoom(true);
 
-       kolData = new KolData();
+        kolData = new KolData();
+
+        // retrieve isLoggedIn state
+        if(savedInstanceState !=null)
+        	isLoggedIn = savedInstanceState.getBoolean("isLoggedIn", false);
+        else
+        	isLoggedIn = false;
         
+        // go to login window if we're not logged in
+ 	    /*if(isLoggedIn == false){
+	        try{
+			   		Intent myIntent = new Intent( this , Login.class);
+			   		//gives the intent to start, and the request code so we know when it's called back
+			   		startActivityForResult(myIntent, KolApp.REQUESTCODE_LOGIN);
+	   		}catch(Exception e){ postText("Can't start activity: " + e.toString()); }
+    	}*/
+       
+        if(isLoggedIn == false) try{
+ 		   
+ 		   Intent loginInfo = getIntent();
+ 		   kolData.session = loginInfo.getParcelableExtra("session");
+	       	if(kolData.session == null)
+	       	{
+	       		postText("session is null");
+	       		return;
+	       	}
+	       	try{
+	       		chat = new KolChat(kolData.session, KolApp.this);
+       	
+	       	}catch(Exception e){postText("error creating chat: " + e.toString());}
+	       	chat.chatLog = "<font color=green>Currently in channel: " + kolData.session.initialChatChannel + "</font><br/>";
+			chat.startChat();
+			isLoggedIn=true;
+			postText(loginInfo.getStringExtra("message"));
+       	}catch(Exception e){postText("Some error getting intent/posting to chat: " + e.toString());}
+       
     }
     
    
@@ -272,11 +316,13 @@ public class KolApp extends Activity {
     }
     
     public void quit(){
+    	//todo -- need better idea of what to do here -- it should block but also allow the user to exit if they want
     	try{
     		chat.runchat=false;
     		if(kolData.session != null)
     			kolData.session.logOut();
-    		finish();
+    		kolData.session = null;
+       		finish();
     		
     	}
     	catch(Exception e){

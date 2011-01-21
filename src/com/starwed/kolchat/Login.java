@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 public class Login extends Activity {
 		private Button login_button;
@@ -38,10 +39,15 @@ public class Login extends Activity {
 	            	new StartSessionTask().execute(user, password);
 	            }
 	        });
-
-        
-        
 		}
+		
+		public void postToast(String msg){
+
+			Toast toast = Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_SHORT);
+			toast.show();
+			
+		}
+		
 	    public class StartSessionTask extends AsyncTask<String, String, String >{
 	    	 
 	    	
@@ -49,6 +55,8 @@ public class Login extends Activity {
 				
 				try{
 					session = new KolSession(args[0], args[1]);
+				}catch(KolLoginException e){
+					return("Problem creating session: " + e.message);
 				}catch(Exception e ){
 					return( "Problem creating session: " + e.toString() );
 				}
@@ -66,19 +74,26 @@ public class Login extends Activity {
 			
 			protected void onPostExecute(String result) {
 				dialog.cancel();
+				
+				
 				//return to initial app
-				Intent loginInfo = new Intent();
-				loginInfo.putExtra("session", session);
-				setResult(RESULT_OK, loginInfo);
-            	finish();
+				if(session!=null){
+					try{
+			    		Intent kolLoggedIn = new Intent( Login.this , KolApp.class);
+			    		kolLoggedIn.putExtra("session", session);
+			    		kolLoggedIn.putExtra("message", result);
+			    		//gives the intent to start, and the request code so we know when it's called back
+			    		startActivity(kolLoggedIn);
+			    		
+			    	}catch(Exception e){ postToast("Can't start chat activity: " + e.toString()); }
+					
+					
+					
+				} else {
+					postToast(result);
+				}
             	
-            	//TODO move thisinto KolApp after return
-				/*if(kolData.session != null){
-					updateChatView("<font color=green>Currently in channel: " + kolData.session.initialChatChannel + "</font><br/>");
-					chat = new KolChat(kolData.session, KolApp.this);
-	            	chat.startChat();
-				}*/
-				//postText(result);
+            	
 	        }
 	    }
 }

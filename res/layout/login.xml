@@ -4,6 +4,13 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     >
+    <TextView   android:id="@+id/heading_text"
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:textSize="30dp"
+		android:gravity="center"
+		android:text="KolChat!"
+		/> 
     <TextView   android:id="@+id/name_text"
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
