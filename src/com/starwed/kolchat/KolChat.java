@@ -7,12 +7,7 @@ import android.os.AsyncTask;
 import android.os.Handler;
 
 
-//TODO!
-/*
- * 
- * 
- * 
- */
+
 public class KolChat {
 		
 	private KolSession session;
@@ -48,49 +43,37 @@ public class KolChat {
  		   return;
  	   
  	   //if there is stuff logged, show it, otherwise show a temp message.
- 	   if(chatLog.length() == 0)
- 	   {	  
+ 	   if(chatLog.length() == 0) {	  
  		   // maybe return?  This should never happen if we've initialised
- 		   
- 	   }
- 	   else
+  	   } else
  		   app.updateChatView(chatLog);
  	   // Initialise the first chat request to occur in 800ms.  
  	   // After that, each successful chat request sets up another one to occur in KolApp.CHAT_DELAY ms.
- 	   try{
+ 	   try {
  		   timer.schedule(new FetchChat(), 800);
-        }catch(Exception e){
+        } catch(Exception e) {
      	   app.postText("Problem starting chat timer" + e.toString() );
         }
  	   
     }
     
-  
-
-
-	public void submitChat(String postedgraf)
-    {
+	public void submitChat(String postedgraf) {
 		String response;
 		KolRequest kolreq;
 		try{
-    	
-    	//construct request
-    	kolreq = session.createKolRequest("submitnewchat.php");
-    	kolreq.addQuery("graf",  postedgraf);
-		
-    	
+	    	//construct request
+	    	kolreq = session.createKolRequest("submitnewchat.php");
+	    	kolreq.addQuery("graf",  postedgraf);
 			try{
-	    	//get the response and display it.  This blocks the UI thread... is that what we want?
-	    	response = kolreq.doRequestWithPassword();
-	    	//postText(response);  //just for debugging purposes
-	    	ProcessChatResponse(response);
+		    	//get the response and display it.  This blocks the UI thread... is that what we want?
+		    	response = kolreq.doRequestWithPassword();
+		    	//postText(response);  //just for debugging purposes
+		    	ProcessChatResponse(response);
 			}catch(Exception e){ app.postText("Error in submitChat:getting a response: " + e.toString()); };
 		}catch(Exception e){ app.postText("Error in submitChat:creating query: " + e.toString()); };
-
     }
     
-    public void ProcessChatResponse(String response)
-    {
+    public void ProcessChatResponse(String response) {
     	try{
     	chatLog = chatLog + response;
     	/*
@@ -128,8 +111,6 @@ public class KolChat {
     //This performs the asyn request to get updated chat stuff, and then hands the response to ProcessChatResponse
     public class GetChatTask extends AsyncTask <Object, String, String> {
  
-   
-	
 		protected String doInBackground(Object... args) {
 			if(runchat==false)
 				return "";
@@ -145,9 +126,8 @@ public class KolChat {
 		
 		protected void onProgressUpdate(String... progress) {
 	        // setProgressPercent(progress[0]);
-	     }
+	    }
 
-		
 		protected void onPostExecute(String result) {
             
 			//I believe every valid response from a request for newchatmessages.php will contain lastseen info, 
@@ -158,7 +138,7 @@ public class KolChat {
         			int index = result.lastIndexOf("lastseen");
         			lastseen = result.substring(index+9, index+19);
  
-        			//Do whatever is necessary with this result.  Later, maybe move all parsing (including lastseen) into this function
+        			//Do whatever is necessary with this reslt.  Later, maybe move all parsing (including lastseen) into this function
         			ProcessChatResponse(result);
         	}
         	else if(session != null)	//If the session isn't active there's nothing interesting to say
@@ -168,7 +148,4 @@ public class KolChat {
         		timer.schedule(new FetchChat(), CHAT_DELAY);
         }
     }
-
-
-
 }

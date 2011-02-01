@@ -21,11 +21,11 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 
 // TODO list 
-//- Bring up login screen on app start?  Not yet, I guess
-//- investigate chat window not updating bug
+// - investigate chat window not updating bug
 
 
 // ? Optionally allow info to be stored?  Not really sure how hard that is yet.
@@ -46,11 +46,9 @@ public class KolApp extends Activity {
 	
 	private WebViewClient client;
 	private boolean isLoggedIn=false;
-	public class KolData
-	{
+	public class KolData {
 		public KolSession session;
 		public boolean runchat = false;	
-		 		
 	}
 	public KolData kolData; 
 	public KolChat chat;
@@ -64,8 +62,6 @@ public class KolApp extends Activity {
 	private TextView output_textview;
 
 	private EditText chatedit;
-			
-
 	private static final int REQUESTCODE_LOGIN = 1;
 	
 	//This method is called before the activity is destroyed, so we save all the data needed for restoring later
@@ -100,7 +96,6 @@ public class KolApp extends Activity {
 			}catch(Exception e){};
 			chat.startChat();			
 		}
-		
 	}
 	
 	//called after a subactivity has completed
@@ -128,15 +123,12 @@ public class KolApp extends Activity {
 					chat.startChat();
 					isLoggedIn=true;
 	            	}catch(Exception e){postText(e.toString());}
-	            	
 	            }
 	        default:
 	            break;
 	    }
 	}
 
-	
-	
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -157,7 +149,6 @@ public class KolApp extends Activity {
                 	try{chat.submitChat( chatedit.getText().toString() ); }
                 	catch(Exception e){postText(e.toString());}
                 	chatedit.setText("");
-                	
                 	return true;
                 }
                 return false;
@@ -211,15 +202,6 @@ public class KolApp extends Activity {
         	isLoggedIn = savedInstanceState.getBoolean("isLoggedIn", false);
         else
         	isLoggedIn = false;
-        
-        // go to login window if we're not logged in
- 	    /*if(isLoggedIn == false){
-	        try{
-			   		Intent myIntent = new Intent( this , Login.class);
-			   		//gives the intent to start, and the request code so we know when it's called back
-			   		startActivityForResult(myIntent, KolApp.REQUESTCODE_LOGIN);
-	   		}catch(Exception e){ postText("Can't start activity: " + e.toString()); }
-    	}*/
        
         if(isLoggedIn == false) try{
  		   
@@ -243,21 +225,22 @@ public class KolApp extends Activity {
     }
     
    
-    public void loadHtml(String source)
-    {
+    public void loadHtml(String source){
        	//Hopefully using the base url will prevent that annoying data:url bug/problem.
     	chatView.loadDataWithBaseURL(null, source,"text/html", "UTF-8", null);
     }
     
-    public void postText(String text)
-    {
+    public void postText(String text){
     	output_textview.setText(text);
     }
     
+    //pops up a notification that quickly goes away
+	public void postToast(String text){
+		Toast toast = Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT);
+		toast.show();
+	}
     
-    
-    public void updateChatView(String chatlog)
-    {
+    public void updateChatView(String chatlog) {
     	//note: if the chatlog completely changes (as opposed to being updated) the scrolling will get messed up. 
     	
       	try{
@@ -274,9 +257,6 @@ public class KolApp extends Activity {
  		}catch(Exception e){ postText("Problem in updateChatView " + e.toString()); };
 
     }
- 
-    
-    
 
     
     //creates options menu from the xml resource
@@ -292,9 +272,9 @@ public class KolApp extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
         switch (item.getItemId()) {
-        case R.id.menu_login:
+        /*case R.id.menu_login:
         	requestLogin();
-            return true;
+            return true;*/
         case R.id.menu_quit:
         	quit();
             return true;
@@ -303,8 +283,7 @@ public class KolApp extends Activity {
         }
     }
     
-    public void requestLogin()
-    {
+    public void requestLogin() {
     	try{
     		Intent myIntent = new Intent( this , Login.class);
     		
@@ -329,5 +308,7 @@ public class KolApp extends Activity {
     		postText("Error during logout: " + e.toString());
     	}
     }
+    
+    
     
 }
