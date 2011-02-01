@@ -181,7 +181,7 @@ public class KolSession implements Parcelable{
     	
    	
     	username= URLEncoder.encode(username);
-    	password= URLEncoder.encode(password);
+    	//password= URLEncoder.encode(password);
     	
     	
     	//This is the logic for insecure logins
