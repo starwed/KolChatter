@@ -68,7 +68,8 @@ public class KolChat {
 		    	//get the response and display it.  This blocks the UI thread... is that what we want?
 		    	response = kolreq.doRequestWithPassword();
 		    	//postText(response);  //just for debugging purposes
-		    	ProcessChatResponse(response);
+		    	ParsedChatResponse pResponse = new ParsedChatResponse(response);
+		    	ProcessChatResponse(pResponse);
 			}catch(Exception e){ app.postText("Error in submitChat:getting a response: " + e.toString()); };
 		}catch(Exception e){ app.postText("Error in submitChat:creating query: " + e.toString()); };
     }
@@ -77,25 +78,25 @@ public class KolChat {
 	// - in particular, figure out if we got logged out.
 	
 	// Here's a string that occurs in the source of the login that I don't think can occur in chat:
-	//			<b>Enter the Kingdom:</b>
+	//			<b>Enter the KPaingdom:</b>
 	 
-    public void ProcessChatResponse(String response) {
+    public void ProcessChatResponse(ParsedChatResponse response) {
+    	if(response.loggedOutResponse == true) {
+    		app.unexpectedLogout("oops");
+    		return;
+    	}
+    	
     	try{
-    	chatLog = chatLog + response;
-    	/*
-    	 * Three cases:
-    	 * 	index == 0 --> response ONLY contains the lastseen tick, so don't update
-    	 *  index < 0  --> response DOES NOT contain lastseen, so contains something else important. Update!
-    	 *  index >0   --> response is standard chat update with lastseen tagged on at the end, so Update!
-    	 * Would be more elegant to simply remove lastseen block and then update if there was anything left.
-    	 * We might need to have the logic anyway, to process dojax scripts that are sent to us.
-    	 */
-    	if(response.indexOf("<!--lastseen") != 0 )
-    		app.updateChatView(chatLog);
-		}catch(Exception e){ app.postText("Error in ProcessChatResponse " + e.toString()); };
+	    	chatLog = chatLog + response.rawResponse;
+	    	if(response.empty == false)
+	    		app.updateChatView(chatLog);
+    	}catch(Exception e){ 
+    		app.postText("Error in ProcessChatResponse " + e.toString()); 
+    	}
+    }
+	
 
 		
-    }
  
     //This class is a runnable object that, when ran, makes an async request to update chat
     //  --The class seems to be necessary so that we can schedule a TimerTask object 
@@ -141,10 +142,11 @@ public class KolChat {
 
 			//I believe every valid response from a request for newchatmessages.php will contain lastseen info, 
 			// so only process the response if that's the case
+			// if we get a logged out response, send on to ProcessChatResponse so everything is dealt with in a uniform way
         	if(response.validChatUpdate == true) {
-        		ProcessChatResponse(response.rawResponse);
+        		ProcessChatResponse(response);
         		lastseen = response.lastseen;
-        	} else if(session != null)	//If the session isn't active there's nothing interesting to say
+        	} else if(response.loggedOutResponse && session != null)	//If the session isn't active there's nothing interesting to say
         		app.postText("Error getting response from newchatmessages.php: " + result);
 
         	//Schedule next fetch of chat, regardless of whether result makes sense, but only if runchat flag is set

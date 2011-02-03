@@ -259,6 +259,12 @@ public class KolApp extends Activity {
     }
 
     
+    public void unexpectedLogout(String message) {
+    	postToast("You seem to have logged out.  Please hit back to return to the login screen.");
+    	postText("You seem to have logged out.  Please hit back to return to the login screen.");
+    	
+    }
+    
     //creates options menu from the xml resource
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
