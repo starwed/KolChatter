@@ -73,6 +73,12 @@ public class KolChat {
 		}catch(Exception e){ app.postText("Error in submitChat:creating query: " + e.toString()); };
     }
     
+	//TODO need better logic on when response is valid
+	// - in particular, figure out if we got logged out.
+	
+	// Here's a string that occurs in the source of the login that I don't think can occur in chat:
+	//			<b>Enter the Kingdom:</b>
+	 
     public void ProcessChatResponse(String response) {
     	try{
     	chatLog = chatLog + response;
@@ -130,22 +136,21 @@ public class KolChat {
 
 		protected void onPostExecute(String result) {
             
+			
+			ParsedChatResponse response = new ParsedChatResponse(result);
+
 			//I believe every valid response from a request for newchatmessages.php will contain lastseen info, 
 			// so only process the response if that's the case
-        	if(result.contains("lastseen"))
-        	{
-        			//Parse lastseen value from response.  Lastindex because it's appended to the end of the chat itself.
-        			int index = result.lastIndexOf("lastseen");
-        			lastseen = result.substring(index+9, index+19);
- 
-        			//Do whatever is necessary with this reslt.  Later, maybe move all parsing (including lastseen) into this function
-        			ProcessChatResponse(result);
-        	}
-        	else if(session != null)	//If the session isn't active there's nothing interesting to say
+        	if(response.validChatUpdate == true) {
+        		ProcessChatResponse(response.rawResponse);
+        		lastseen = response.lastseen;
+        	} else if(session != null)	//If the session isn't active there's nothing interesting to say
         		app.postText("Error getting response from newchatmessages.php: " + result);
+
         	//Schedule next fetch of chat, regardless of whether result makes sense, but only if runchat flag is set
         	if(runchat==true)
         		timer.schedule(new FetchChat(), CHAT_DELAY);
+
         }
     }
 }
