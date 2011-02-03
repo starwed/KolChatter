@@ -272,15 +272,20 @@ public class KolApp extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
         switch (item.getItemId()) {
-        /*case R.id.menu_login:
-        	requestLogin();
-            return true;*/
+        case R.id.menu_info:
+        	requestInfo();
+            return true;
         case R.id.menu_quit:
         	quit();
             return true;
         default:
             return super.onOptionsItemSelected(item);
         }
+    }
+    
+    public void requestInfo(){
+    	String msg = "Logged in as " + kolData.session.charName +" (#" + kolData.session.playerid + ") to " + kolData.session.host;
+    	postToast(msg);
     }
     
     public void requestLogin() {
@@ -302,8 +307,7 @@ public class KolApp extends Activity {
     			kolData.session.logOut();
     		kolData.session = null;
        		finish();
-    		
-    	}
+       	}
     	catch(Exception e){
     		postText("Error during logout: " + e.toString());
     	}
