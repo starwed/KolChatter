@@ -266,8 +266,8 @@ public class KolApp extends Activity {
 		kolData.session = null;
 		
 		//tell the user something happened
-    	postToast("You seem to have been logged out.  Please hit back to return to the login screen.");
-    	postText("You seem to have been logged out.  Please hit back to return to the login screen.");
+    	postToast("You don't seem to be logged in.  Please hit back to return to the login screen.");
+    	postText("You don't seem to be logged in.  Please hit back to return to the login screen.");
     	
     }
     
