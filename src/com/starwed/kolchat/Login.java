@@ -52,7 +52,8 @@ public class Login extends Activity {
 	    	 
 	    	
 			protected String doInBackground(String... args) {
-				
+				//we need to reset session to null so if we're returning to this activity from a logged in state all assumptions work
+	    		session = null; 
 				try{
 					session = new KolSession(args[0], args[1]);
 				}catch(KolLoginException e){
@@ -82,6 +83,8 @@ public class Login extends Activity {
 			    		Intent kolLoggedIn = new Intent( Login.this , KolApp.class);
 			    		kolLoggedIn.putExtra("session", session);
 			    		kolLoggedIn.putExtra("message", result);
+			    		
+			    		
 			    		//gives the intent to start, and the request code so we know when it's called back
 			    		startActivity(kolLoggedIn);
 			    		
