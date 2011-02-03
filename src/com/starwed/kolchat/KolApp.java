@@ -209,7 +209,7 @@ public class KolApp extends Activity {
  		   kolData.session = loginInfo.getParcelableExtra("session");
 	       	if(kolData.session == null)
 	       	{
-	       		postText("session is null");
+	       		postToast("session is null");
 	       		return;
 	       	}
 	       	try{
@@ -260,8 +260,14 @@ public class KolApp extends Activity {
 
     
     public void unexpectedLogout(String message) {
-    	postToast("You seem to have logged out.  Please hit back to return to the login screen.");
-    	postText("You seem to have logged out.  Please hit back to return to the login screen.");
+		//set all flags to a state consistent with being logged out
+    	chat.runchat=false;
+		isLoggedIn = false;
+		kolData.session = null;
+		
+		//tell the user something happened
+    	postToast("You seem to have been logged out.  Please hit back to return to the login screen.");
+    	postText("You seem to have been logged out.  Please hit back to return to the login screen.");
     	
     }
     
@@ -284,14 +290,19 @@ public class KolApp extends Activity {
         case R.id.menu_quit:
         	quit();
             return true;
+        case R.id.menu_logout:
+        	kolData.session.logOut();
         default:
             return super.onOptionsItemSelected(item);
         }
     }
     
     public void requestInfo(){
-    	String msg = "Logged in as " + kolData.session.charName +" (#" + kolData.session.playerid + ") to " + kolData.session.host;
-    	postToast(msg);
+    	// if session exists we should be good, but check the isloogedin status as well
+    	if(kolData.session != null && isLoggedIn == true){
+	    	String msg = "Logged in as " + kolData.session.charName +" (#" + kolData.session.playerid + ") to " + kolData.session.host;
+	    	postToast(msg);
+    	}
     }
     
     public void requestLogin() {
@@ -309,8 +320,10 @@ public class KolApp extends Activity {
     	//todo -- need better idea of what to do here -- it should block but also allow the user to exit if they want
     	try{
     		chat.runchat=false;
+    		
     		if(kolData.session != null)
     			kolData.session.logOut();
+    		isLoggedIn = false;
     		kolData.session = null;
        		finish();
        	}
