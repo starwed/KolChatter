@@ -144,10 +144,10 @@ public class KolChat {
 			// so only process the response if that's the case
 			// if we get a logged out response, send on to ProcessChatResponse so everything is dealt with in a uniform way
         	if(response.validChatUpdate == true) {
-        		ProcessChatResponse(response);
         		lastseen = response.lastseen;
-        	} else if(response.loggedOutResponse && session != null)	//If the session isn't active there's nothing interesting to say
+        	} else if(response.loggedOutResponse == false  && session != null)	//If the session isn't active there's nothing interesting to say
         		app.postText("Error getting response from newchatmessages.php: " + result);
+      		ProcessChatResponse(response);
 
         	//Schedule next fetch of chat, regardless of whether result makes sense, but only if runchat flag is set
         	if(runchat==true)
