@@ -4,6 +4,6 @@
           android:title="Info" />
     <item android:id="@+id/menu_quit"
           android:title="Logout" />
-    <item android:id="@+id/menu_logout"
-          android:title="Force Logout" />
+    <!-- item android:id="@+id/menu_logout"
+          android:title="Force Logout" /-->
 </menu>

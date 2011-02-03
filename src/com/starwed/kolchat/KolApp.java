@@ -290,8 +290,8 @@ public class KolApp extends Activity {
         case R.id.menu_quit:
         	quit();
             return true;
-        case R.id.menu_logout:
-        	kolData.session.logOut();
+        /* case R.id.menu_logout:
+        	kolData.session.logOut();*/
         default:
             return super.onOptionsItemSelected(item);
         }
